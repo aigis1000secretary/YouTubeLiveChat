@@ -15,7 +15,17 @@ const COLOR = {
     bgBlue: '\x1b[44m', bgMagenta: '\x1b[45m', bgCyan: '\x1b[46m', bgWhite: '\x1b[47m',
 };
 
-let YOUTUBE_APIKEY = "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M";
+let YOUTUBE_APIKEY = [
+    "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M",
+    "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M",
+    "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M",
+    "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M",
+    "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M",
+];
+const shiftAPIKey = () => {
+    if (YOUTUBE_APIKEY.length < 0) { return; }
+    YOUTUBE_APIKEY.shift();
+};
 
 const isDoubleByte = (char) => { return (char.charCodeAt(0) > 255); }
 const getUnicodeCount = (str) => {
@@ -31,16 +41,13 @@ const getChatId = async (id) => {
         let url = 'https://www.googleapis.com/youtube/v3/videos';
         let params = {
             part: 'liveStreamingDetails',
-            key: YOUTUBE_APIKEY,
+            key: YOUTUBE_APIKEY[0],
             id: id
         }
         const res = await get({ url, qs: params, json: true });
         const data = res.body;
 
-        if (data.error) {
-            error = data.error.code + '\t: ' + data.error.errors[0].reason;
-            throw error;
-        }
+        if (data.error) { throw data.error; }
 
         if (data.items.length == 0) {
             error = 'LiveStream not found.';
@@ -55,6 +62,7 @@ const getChatId = async (id) => {
     } catch (error) {
         console.log('Oops!');
         console.log(error);
+        // console.log(error =  + '\t: ' + error.errors[0].reason);
     }
 }
 
@@ -63,17 +71,14 @@ const getChatMessages = async (chatid, pageToken) => {
         let url = 'https://www.googleapis.com/youtube/v3/liveChat/messages';
         let params = {
             part: 'id,snippet,authorDetails',
-            key: YOUTUBE_APIKEY,
+            key: YOUTUBE_APIKEY[0],
             liveChatId: chatid,
             pageToken
         }
         const res = await get({ url, qs: params, json: true });
         const data = res.body;
 
-        if (data.error) {
-            error = data.error.code + ': ' + data.error.errors[0].reason;
-            throw error;
-        }
+        if (data.error) { throw data.error; }
 
         for (let item of data.items) {
             let useName = item.authorDetails.displayName;
@@ -120,6 +125,7 @@ const getChatMessages = async (chatid, pageToken) => {
     } catch (error) {
         console.log('Oops!');
         console.log(error);
+        // console.log(error =  + '\t: ' + error.errors[0].reason);
     }
 }
 
