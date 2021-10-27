@@ -1,5 +1,6 @@
 
-const { mainModule } = require('process');
+
+if (require('fs').existsSync('./debug.js')) { require('./debug.js'); }
 const request = require('request');
 const util = require('util');
 const get = util.promisify(request.get);
@@ -16,11 +17,12 @@ const COLOR = {
 };
 
 let YOUTUBE_APIKEY = [
-    "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M",
-    "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M",
-    "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M",
-    "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M",
-    "AIzaSyAr1JVOE1hPRK2MWWlewCzY4vglSGp9l3M",
+    process.env.YOUTUBE_APIKEY_1,
+    process.env.YOUTUBE_APIKEY_2,
+    process.env.YOUTUBE_APIKEY_3,
+    process.env.YOUTUBE_APIKEY_4,
+    process.env.YOUTUBE_APIKEY_5,
+    process.env.YOUTUBE_APIKEY_6,
 ];
 const shiftAPIKey = () => {
     if (YOUTUBE_APIKEY.length < 0) { return; }
@@ -39,7 +41,7 @@ const getChatId = async (id) => {
     try {
         let url = 'https://www.googleapis.com/youtube/v3/videos';
         let params = {
-            part: 'liveStreamingDetails',
+            part: 'snippet,liveStreamingDetails',
             key: YOUTUBE_APIKEY[0],
             id: id
         }
@@ -54,11 +56,20 @@ const getChatId = async (id) => {
         }
 
         let livechatid = data.items[0].liveStreamingDetails.activeLiveChatId;
+        console.log(data.items[0].snippet.title);
         console.log(livechatid);
         console.log();
         return livechatid;
 
     } catch (error) {
+        // quotaExceeded
+        if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
+            console.log(`ERR! quotaExceeded key: ${YOUTUBE_APIKEY[0]}`);
+            shiftAPIKey();
+            // retry
+            if (YOUTUBE_APIKEY.length > 0) { return await getChatId(id); }
+        }
+
         console.log('Oops!');
         console.log(error);
         // console.log(error =  + '\t: ' + error.errors[0].reason);
@@ -87,7 +98,7 @@ const getChatMessages = async (chatid, pageToken) => {
             let nsDetails = item.snippet.newSponsorDetails;
             // chat message
             if (scDetails) {
-                chatMsg = scDetails.userComment;
+                chatMsg = scDetails.userComment || chatMsg;
                 switch (scDetails.tier) {
                     case 1: { chatMsg = `${COLOR.bgBlue}${COLOR.fgWhite}${chatMsg}${COLOR.reset}`; } break;
                     case 2: { chatMsg = `${COLOR.bgCyan}${COLOR.fgWhite}${chatMsg}${COLOR.reset}`; } break;
@@ -105,7 +116,7 @@ const getChatMessages = async (chatid, pageToken) => {
             let unicodeCount = getUnicodeCount(useName);
             useName = useName.padStart(32 - unicodeCount, ' ')
             if (auDetails.isChatOwner) {
-                useName = `${COLOR.bgYellow}${COLOR.fgWhite}${useName}${COLOR.reset}`
+                useName = `${COLOR.bgYellow}${COLOR.fgBlack}${useName}${COLOR.reset}`
             } else if (auDetails.isChatSponsor) {
                 useName = `${COLOR.bright}${COLOR.fgGreen}${useName}${COLOR.reset}`
             } else if (auDetails.isChatModerator) {
@@ -122,6 +133,14 @@ const getChatMessages = async (chatid, pageToken) => {
         setTimeout(() => { getChatMessages(chatid, pageToken); }, nextTime);
 
     } catch (error) {
+        // quotaExceeded
+        if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
+            console.log(`ERR! quotaExceeded key: ${YOUTUBE_APIKEY[0]}`);
+            shiftAPIKey();
+            // retry
+            if (YOUTUBE_APIKEY.length > 0) { return await getChatMessages(chatid, pageToken); }
+        }
+
         console.log('Oops!');
         console.log(error);
         // console.log(error =  + '\t: ' + error.errors[0].reason);
@@ -153,3 +172,30 @@ Arguments:              Function:
             );
     }
 }; main(process.argv);
+
+// Oops!
+// {
+//   code: 403,
+//   message: 'The request is missing a valid API key.',
+//   errors: [
+//     {
+//       message: 'The request is missing a valid API key.',
+//       domain: 'global',
+//       reason: 'forbidden'
+//     }
+//   ],
+//   status: 'PERMISSION_DENIED'
+// }
+
+// Oops!
+// {
+//   code: 403,
+//   message: 'The request cannot be completed because you have exceeded your <a href="/youtube/v3/getting-started#quota">quota</a>.',
+//   errors: [
+//     {
+//       message: 'The request cannot be completed because you have exceeded your <a href="/youtube/v3/getting-started#quota">quota</a>.',
+//       domain: 'youtube.quota',
+//       reason: 'quotaExceeded'
+//     }
+//   ]
+// }
