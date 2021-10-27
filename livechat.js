@@ -27,11 +27,10 @@ const shiftAPIKey = () => {
     YOUTUBE_APIKEY.shift();
 };
 
-const isDoubleByte = (char) => { return (char.charCodeAt(0) > 255); }
 const getUnicodeCount = (str) => {
     let count = 0;
     for (let i = 0; i < str.length; ++i) {
-        if (isDoubleByte(str[i])) { count++; }
+        if ((str[i]).charCodeAt(0) > 255) { count++; }
     }
     return count;
 }
