@@ -104,8 +104,8 @@ const getChatMessages = async (chatid, pageToken) => {
                 useName = `${COLOR.bgYellow}${COLOR.fgWhite}${useName}${COLOR.reset}`
             } else if (auDetails.isChatSponsor) {
                 useName = `${COLOR.bright}${COLOR.fgGreen}${useName}${COLOR.reset}`
-            } else if (auDetails.isChatSponsor) {
-                useName = `${COLOR.bright}${COLOR.fgBlue}${useName}${COLOR.reset}`
+            } else if (auDetails.isChatModerator) {
+                useName = `${COLOR.bright}${COLOR.fgCyan}${useName}${COLOR.reset}`
             }
             // show chat
             console.log(` ${useName} ${COLOR.bgWhite}${COLOR.fgBlack}:${COLOR.reset} ${chatMsg}`)
