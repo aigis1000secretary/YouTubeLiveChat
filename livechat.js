@@ -16,7 +16,7 @@ const COLOR = {
     bgBlue: '\x1b[44m', bgMagenta: '\x1b[45m', bgCyan: '\x1b[46m', bgWhite: '\x1b[47m',
 };
 
-let YOUTUBE_APIKEY = [
+let YOUTUBE_SUBAPIKEY = [
     process.env.YOUTUBE_APIKEY_1,
     process.env.YOUTUBE_APIKEY_2,
     process.env.YOUTUBE_APIKEY_3,
@@ -25,8 +25,8 @@ let YOUTUBE_APIKEY = [
     process.env.YOUTUBE_APIKEY_6,
 ];
 const shiftAPIKey = () => {
-    if (YOUTUBE_APIKEY.length < 0) { return; }
-    YOUTUBE_APIKEY.shift();
+    if (YOUTUBE_SUBAPIKEY.length < 0) { return; }
+    YOUTUBE_SUBAPIKEY.shift();
 };
 
 const getUnicodeCount = (str) => {
@@ -42,18 +42,14 @@ const getChatId = async (id) => {
         let url = 'https://www.googleapis.com/youtube/v3/videos';
         let params = {
             part: 'snippet,liveStreamingDetails',
-            key: YOUTUBE_APIKEY[0],
+            key: YOUTUBE_SUBAPIKEY[0],
             id: id
         }
         const res = await get({ url, qs: params, json: true });
         const data = res.body;
 
         if (data.error) { throw data.error; }
-
-        if (data.items.length == 0) {
-            error = 'LiveStream not found.';
-            throw error;
-        }
+        if (data.items.length == 0) { throw 'LiveStream not found.'; }
 
         let livechatid = data.items[0].liveStreamingDetails.activeLiveChatId;
         console.log(data.items[0].snippet.title);
@@ -64,10 +60,10 @@ const getChatId = async (id) => {
     } catch (error) {
         // quotaExceeded
         if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
-            console.log(`ERR! quotaExceeded key: ${YOUTUBE_APIKEY[0]}`);
+            console.log(`ERR! quotaExceeded key: ${YOUTUBE_SUBAPIKEY[0]}`);
             shiftAPIKey();
             // retry
-            if (YOUTUBE_APIKEY.length > 0) { return await getChatId(id); }
+            if (YOUTUBE_SUBAPIKEY.length > 0) { return await getChatId(id); }
         }
 
         console.log('Oops!');
@@ -81,7 +77,7 @@ const getChatMessages = async (chatid, pageToken) => {
         let url = 'https://www.googleapis.com/youtube/v3/liveChat/messages';
         let params = {
             part: 'id,snippet,authorDetails',
-            key: YOUTUBE_APIKEY[0],
+            key: YOUTUBE_SUBAPIKEY[0],
             liveChatId: chatid,
             pageToken
         }
@@ -135,10 +131,10 @@ const getChatMessages = async (chatid, pageToken) => {
     } catch (error) {
         // quotaExceeded
         if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
-            console.log(`ERR! quotaExceeded key: ${YOUTUBE_APIKEY[0]}`);
+            console.log(`ERR! quotaExceeded key: ${YOUTUBE_SUBAPIKEY[0]}`);
             shiftAPIKey();
             // retry
-            if (YOUTUBE_APIKEY.length > 0) { return await getChatMessages(chatid, pageToken); }
+            if (YOUTUBE_SUBAPIKEY.length > 0) { return await getChatMessages(chatid, pageToken); }
         }
 
         console.log('Oops!');
@@ -196,6 +192,19 @@ Arguments:              Function:
 //       message: 'The request cannot be completed because you have exceeded your <a href="/youtube/v3/getting-started#quota">quota</a>.',
 //       domain: 'youtube.quota',
 //       reason: 'quotaExceeded'
+//     }
+//   ]
+// }
+
+// Oops!
+// {
+//   code: 403,
+//   message: 'The live chat is no longer live.',
+//   errors: [
+//     {
+//       message: 'The live chat is no longer live.',
+//       domain: 'youtube.liveChat',
+//       reason: 'liveChatEnded'
 //     }
 //   ]
 // }
